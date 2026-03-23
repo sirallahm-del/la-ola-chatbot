@@ -9,13 +9,17 @@ app = Flask(__name__)
 API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=API_KEY) if API_KEY else None
 
-SYSTEM_PROMPT = """You are a chill, human assistant for La Ola Rooftop.
+SYSTEM_PROMPT = """You are a real human assistant for La Ola rooftop.
 
-Keep it short (max 2 sentences).
-Sound natural, like texting.
-Be warm, fun, and make people want to come.
+Talk like a real person texting.
+Keep it VERY short (1-2 sentences max).
 
-Never sound like a robot.
+No marketing talk.
+No long explanations.
+
+Be chill, natural, friendly.
+
+Always ask a small question at the end.
 """
 
 HTML_PAGE = """
@@ -96,8 +100,8 @@ border: none;
 
 <div class="messages" id="chat">
 <div class="msg bot">
-Welcome to La Ola 🌊<br><br>
-What are you looking for?
+Hey 👋 welcome to La Ola 🌊<br><br>
+What can I help you with?
 </div>
 </div>
 
@@ -156,6 +160,12 @@ def home():
 def ask():
     msg = request.json.get("message", "").lower()
 
+    # ===== SMART FIX PROBLEM =====
+    if any(x in msg for x in ["problem", "issue", "complaint", "bug"]):
+        return jsonify({
+            "reply": "Ah sorry about that 🙏 what happened?"
+        })
+
     # ===== RÉPONSES RAPIDES =====
 
     if "menu" in msg:
@@ -164,13 +174,13 @@ def ask():
 🍹 Aperol Spritz — 90 DH<br>
 🍕 Seafood Pizza — 100 DH<br>
 🍤 Gambas — 90 DH<br><br>
-You coming for drinks or food? 😄"""
+You more drinks or food? 😄"""
         })
 
     if any(x in msg for x in ["location", "where", "adresse"]):
         return jsonify({
             "reply": """📍 12 Bd de l’Océan Atlantique, Ain Diab 🌊<br><br>
-Easy to find on the corniche 😉<br><br>
+Right on the corniche 😉<br><br>
 You coming tonight?"""
         })
 
@@ -183,9 +193,15 @@ How many people?"""
 
     if "event" in msg:
         return jsonify({
-            "reply": """DJ sets & great vibe 🎶🔥<br><br>
+            "reply": """DJ sets every night 🎶🔥<br><br>
 Best after 8pm 👀<br><br>
 You more chill or party?"""
+        })
+
+    if any(x in msg for x in ["hour", "open", "close", "time"]):
+        return jsonify({
+            "reply": """We’re open every day 09:30 → 01:00 🕒<br><br>
+You thinking brunch or night vibe?"""
         })
 
     # ===== IA =====
@@ -198,7 +214,8 @@ You more chill or party?"""
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": msg}
                 ],
-                max_tokens=80
+                max_tokens=80,
+                temperature=0.8
             )
 
             reply = response.choices[0].message.content
@@ -208,7 +225,7 @@ You more chill or party?"""
             pass
 
     return jsonify({
-        "reply": "Hey 👋 I can help with menu, booking, location or events 😄"
+        "reply": "Hey 👋 you looking for menu, booking, location or events?"
     })
 
 if __name__ == "__main__":
