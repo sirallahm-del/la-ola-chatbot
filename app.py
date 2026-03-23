@@ -16,6 +16,7 @@ client = Groq(api_key=API_KEY)
 
 CONTACT = "05 22 79 78 85"
 ADRESSE = "📍 Ain Diab, Casablanca"
+HORAIRES = "🕒 09h30 → 01h00 tous les jours"
 
 HTML_PAGE = """
 <!DOCTYPE html>
@@ -41,7 +42,7 @@ button { padding:10px; }
 <body>
 <div class="chat">
     <div class="messages" id="chat">
-        <div class="msg bot">Hey 👋 bienvenue à La Ola 🌊<br>Tu veux le menu, réserver ou l’ambiance ?</div>
+        <div class="msg bot">Hey 👋 bienvenue à La Ola 🌊<br>Menu, réservation ou ambiance ?</div>
     </div>
 
     <div class="input">
@@ -87,40 +88,68 @@ def ask():
     data = request.get_json()
     msg = data.get("message", "").lower()
 
-    # MENU
+    # 🔥 réponses rapides (ULTRA IMPORTANT)
+
+    if "horaire" in msg or "heure" in msg:
+        return jsonify({"reply": f"{HORAIRES} 🌊"})
+
     if any(x in msg for x in ["menu", "carte", "prix"]):
         return jsonify({
-            "reply": f"🍹 Aperol Spritz<br>🍕 Seafood Pizza<br>🍤 Gambas<br><br>📞 Réserve au {CONTACT}"
+            "reply": f"🍹 Aperol Spritz<br>🍕 Seafood Pizza<br>🍤 Gambas<br><br>Tu veux autre chose ? 😄"
         })
 
-    # CONTACT
-    if any(x in msg for x in ["contact", "numero", "reservation"]):
+    if any(x in msg for x in ["contact", "numero", "reservation", "reserver"]):
         return jsonify({
-            "reply": f"📞 {CONTACT}<br>{ADRESSE}"
+            "reply": f"📞 {CONTACT}<br>{ADRESSE}<br>Appelle-moi je te réserve 😉"
         })
 
+    if any(x in msg for x in ["où", "localisation", "adresse"]):
+        return jsonify({
+            "reply": f"{ADRESSE} 📍<br>Sur la corniche, easy à trouver 😉"
+        })
+
+    if any(x in msg for x in ["ambiance", "soirée", "dj"]):
+        return jsonify({
+            "reply": f"Rooftop + océan 🌊 DJ + sunset 🔥<br>viens tu vas kiffer"
+        })
+
+    # 🤖 IA fallback (style humain)
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {
                     "role": "system",
-                    "content": f"Tu es un serveur cool de La Ola. Réponse courte, naturelle. Adresse: {ADRESSE}, Tel: {CONTACT}"
+                    "content": f"""
+Tu bosses à La Ola Rooftop.
+
+Réponds comme un humain :
+- très court
+- naturel
+- chill
+- pas de texte long
+
+Toujours donner envie de venir.
+
+Infos :
+{ADRESSE}
+{CONTACT}
+"""
                 },
                 {"role": "user", "content": msg}
             ]
         )
 
-        reply = response.choices[0].message.content
+        reply = response.choices[0].message.content[:150]
         reply += f"<br><br>📞 {CONTACT}"
 
         return jsonify({"reply": reply})
 
-    except Exception as e:
-        print("ERREUR:", e)
+    except Exception:
         return jsonify({
-            "reply": f"Petit bug 😅 appelle-nous au {CONTACT}"
+            "reply": f"Petit bug 😅 appelle au {CONTACT}"
         })
+
 
 if __name__ == "__main__":
     app.run(debug=True)
