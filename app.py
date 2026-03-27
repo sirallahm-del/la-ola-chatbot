@@ -9,9 +9,25 @@ app = Flask(__name__)
 API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=API_KEY) if API_KEY else None
 
-SYSTEM_PROMPT = """You are the official guest relations lead at La Ola Rooftop Casablanca. 
-Your goal is NOT just to give info, but to get the reservation.
-Style: High-end vibe, very human, proactive. Use "Mrehba" and "👌".
+# --- TON NOUVEAU SYSTEM PROMPT OPTIMISÉ ---
+SYSTEM_PROMPT = """You are the top guest relations manager at La Ola Rooftop Casablanca.
+
+Your goal is to guide users to confirm their reservation via phone or WhatsApp.
+
+Rules:
+- Never pretend a booking is confirmed
+- Always guide toward calling or WhatsApp
+- Keep replies short, natural, premium
+- Always end with a question or action
+
+Style:
+- Chill luxury vibe
+- Use "Mrehba" naturally
+- Use emojis subtly (🔥 👌 🌊)
+
+Business info:
+- Location: 12 Bd de l'Ocean Atlantique, Ain Diab
+- Phone: 05 22 79 78 85
 """
 
 HTML_PAGE = """<!DOCTYPE html>
@@ -94,7 +110,7 @@ async function send() {
     addMsg(data.reply, "bot");
     history.push({ role: "assistant", content: data.reply });
   } catch(e) {
-    addMsg("Mrehba 😅 Technical glitch. Call us to book: 05 22 79 78 85", "bot");
+    addMsg("Mrehba 👌 Technical glitch. Call us to confirm: 05 22 79 78 85", "bot");
   }
 }
 function qs(val) { document.getElementById("inp").value = val; send(); }
@@ -102,38 +118,37 @@ function qs(val) { document.getElementById("inp").value = val; send(); }
 </body>
 </html>"""
 
+@app.route('/')
+def home(): return render_template_string(HTML_PAGE)
+
 @app.route('/ask', methods=['POST'])
 def ask():
     data = request.get_json()
     msg = data.get("message", "").strip()
     hist = data.get("history", [])
     m = msg.lower()
+    PHONE = "05 22 79 78 85"
 
-    # --- SALES FLOW PRIORITIES ---
+    # --- SALES FLOW CONDITIONS (HARD CLOSING) ---
     if any(x in m for x in ["book", "table", "reserve"]):
-        return jsonify({"reply": "I can help you book right now 👌<br>For how many people and what time? Want me to lock that in for you?"})
+        return jsonify({"reply": "I'd love to set that up for you 👌 Just call or WhatsApp us at " + PHONE + " to lock in your spot. How many people are you thinking?"})
 
-    if any(x in m for x in ["menu", "drink", "food", "eat"]):
-        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH), Aperol Spritz (90DH).<br><br>Should I book a table for dinner or just drinks?"})
+    if any(x in m for x in ["menu", "drink", "food"]):
+        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH), Aperol Spritz (90DH). Should I guide you to book a table for tonight?"})
 
     if any(x in m for x in ["location", "where", "adresse"]):
-        return jsonify({"reply": "📍 Right on the corniche — 12 Bd de l'Ocean Atlantique. Super easy to find.<br><br>You coming tonight? I can save you a seat."})
+        return jsonify({"reply": "📍 12 Bd de l'Ocean Atlantique, Ain Diab. Perfect ocean view guaranteed. Shall I help you reserve a spot?"})
 
-    # --- AI BACKUP ---
+    # --- AI BACKUP (USING THE NEW SYSTEM PROMPT) ---
     if client:
         try:
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
             messages += hist[-6:]
             response = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages, max_tokens=150)
-            ai_reply = response.choices[0].message.content
-            if "?" not in ai_reply: ai_reply += "<br><br>Want me to reserve a table for you?"
-            return jsonify({"reply": ai_reply})
+            return jsonify({"reply": response.choices[0].message.content})
         except: pass
     
-    return jsonify({"reply": "Mrehba! Call us at 05 22 79 78 85 to secure your spot. See you there? 😉"})
-
-@app.route('/')
-def home(): return render_template_string(HTML_PAGE)
+    return jsonify({"reply": "Mrehba! To confirm your reservation, please call us at " + PHONE + ". See you there? 🔥"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
