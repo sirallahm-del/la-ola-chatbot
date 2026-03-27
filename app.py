@@ -9,25 +9,26 @@ app = Flask(__name__)
 API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=API_KEY) if API_KEY else None
 
-# --- TON NOUVEAU SYSTEM PROMPT OPTIMISÉ ---
+# --- SYSTEM PROMPT ULTIME ---
 SYSTEM_PROMPT = """You are the top guest relations manager at La Ola Rooftop Casablanca.
 
 Your goal is to guide users to confirm their reservation via phone or WhatsApp.
 
 Rules:
-- Never pretend a booking is confirmed
-- Always guide toward calling or WhatsApp
-- Keep replies short, natural, premium
-- Always end with a question or action
+- Never pretend a booking is confirmed.
+- Always guide toward calling (05 22 79 78 85) or WhatsApp (+212 767-393109).
+- Keep replies short, natural, premium.
+- Always end with a question or action.
 
 Style:
-- Chill luxury vibe
-- Use "Mrehba" naturally
-- Use emojis subtly (🔥 👌 🌊)
+- Chill luxury vibe.
+- Use "Mrehba" naturally.
+- Use emojis subtly (🔥 👌 🌊).
 
 Business info:
-- Location: 12 Bd de l'Ocean Atlantique, Ain Diab
+- Location: 12 Bd de l'Ocean Atlantique, Ain Diab.
 - Phone: 05 22 79 78 85
+- WhatsApp: +212 767-393109
 """
 
 HTML_PAGE = """<!DOCTYPE html>
@@ -71,7 +72,7 @@ input { flex: 1; background: none; border: none; outline: none; color: #e8dcc8; 
       <div class="bubble">Mrehba! 🌊<br>I'm here to handle your night at La Ola. What's the plan?</div>
     </div>
   </div>
-  <div class="quick-wrap" id="quickWrap">
+  <div class="quick-wrap">
     <button class="q-btn" onclick="qs('Book a table')">📅 Book a table</button>
     <button class="q-btn" onclick="qs('Menu & Drinks')">🍹 Menu & Drinks</button>
     <button class="q-btn" onclick="qs('Location')">📍 Location</button>
@@ -110,16 +111,13 @@ async function send() {
     addMsg(data.reply, "bot");
     history.push({ role: "assistant", content: data.reply });
   } catch(e) {
-    addMsg("Mrehba 👌 Technical glitch. Call us to confirm: 05 22 79 78 85", "bot");
+    addMsg("Mrehba 👌 Call us at 05 22 79 78 85 or WhatsApp +212 767-393109 to confirm.", "bot");
   }
 }
 function qs(val) { document.getElementById("inp").value = val; send(); }
 </script>
 </body>
 </html>"""
-
-@app.route('/')
-def home(): return render_template_string(HTML_PAGE)
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -128,18 +126,16 @@ def ask():
     hist = data.get("history", [])
     m = msg.lower()
     PHONE = "05 22 79 78 85"
+    WA = "+212 767-393109"
 
-    # --- SALES FLOW CONDITIONS (HARD CLOSING) ---
+    # --- CONDITIONS DE VENTE DIRECTE ---
     if any(x in m for x in ["book", "table", "reserve"]):
-        return jsonify({"reply": "I'd love to set that up for you 👌 Just call or WhatsApp us at " + PHONE + " to lock in your spot. How many people are you thinking?"})
+        return jsonify({"reply": f"Mrehba! 👌 To lock in your table, just give us a call at {PHONE} or message our WhatsApp: {WA}. How many people should we expect?"})
 
-    if any(x in m for x in ["menu", "drink", "food"]):
-        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH), Aperol Spritz (90DH). Should I guide you to book a table for tonight?"})
+    if any(x in m for x in ["menu", "food", "drink"]):
+        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH), Aperol Spritz (90DH).<br><br>Ready to book? I can guide you to our WhatsApp to confirm."})
 
-    if any(x in m for x in ["location", "where", "adresse"]):
-        return jsonify({"reply": "📍 12 Bd de l'Ocean Atlantique, Ain Diab. Perfect ocean view guaranteed. Shall I help you reserve a spot?"})
-
-    # --- AI BACKUP (USING THE NEW SYSTEM PROMPT) ---
+    # --- AI BACKUP ---
     if client:
         try:
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -148,7 +144,10 @@ def ask():
             return jsonify({"reply": response.choices[0].message.content})
         except: pass
     
-    return jsonify({"reply": "Mrehba! To confirm your reservation, please call us at " + PHONE + ". See you there? 🔥"})
+    return jsonify({"reply": f"Mrehba! To confirm, please call {PHONE} or WhatsApp {WA}. See you there? 🔥"})
+
+@app.route('/')
+def home(): return render_template_string(HTML_PAGE)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
