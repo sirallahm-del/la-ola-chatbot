@@ -168,7 +168,7 @@ async function send() {
     addMsg(data.reply, "bot");
     history.push({ role: "assistant", content: data.reply });
   } catch(e) {
-    addMsg("Petit souci technique. 05 22 79 78 85", "bot");
+    addMsg("Mrehba 😅<br><br>Petit bug technique. Appelez-nous directement : 05 22 79 78 85", "bot");
   }
 }
 function qs(text) { document.getElementById("inp").value = text; send(); }
@@ -191,15 +191,24 @@ def ask():
     LINK = "<a href='https://linktr.ee/laolarooftop' target='_blank' style='color:#c9a96e'>linktr.ee/laolarooftop</a>"
     INSTA = "<strong>@laolarooftop</strong>"
 
+    # --- UPDATED RESPONSES (VERSION UPGRADE) ---
+
     if any(x in m for x in ["menu", "food", "eat", "manger", "plat", "dish", "drink", "boire", "carte", "prix", "price"]):
-        return jsonify({"reply": "Nos incontournables:<br><br>Aperol Spritz 90 DH<br>Seafood Pizza 100 DH<br>Gambas 90 DH<br><br>Menu complet sur " + INSTA})
+        return jsonify({"reply": "🔥 Our favourites:<br><br>🍤 Gambas - 90 DH<br>🍕 Seafood Pizza - 100 DH<br>🍹 Aperol Spritz - 90 DH<br><br>Full menu on " + INSTA + " (Highlights: FOOD AND DRINKS)"})
+
+    if any(x in m for x in ["location", "where", "adresse", "address", "corniche", "ain diab"]):
+        return jsonify({"reply": "📍 12 Bd de l'Ocean Atlantique, Ain Diab, Casablanca.<br><br>Right on the corniche, ocean in sight! 🌊"})
 
     if any(x in m for x in ["reserv", "book", "table", "place", "resa"]):
-        return jsonify({"reply": "1-3 personnes: premier arrivé premier servi !<br>4+ personnes: on vous réserve une table via DM ou " + PHONE})
+        return jsonify({"reply": "Nice choice 👀<br><br>1-3 people: First come, first served.<br>4+ people: Call us at " + PHONE + " or DM " + INSTA})
 
-    if any(x in m for x in ["location", "where", "adresse", "address", "corniche"]):
-        return jsonify({"reply": "<strong>12 Bd de l'Ocean Atlantique, Ain Diab</strong><br>Face à l'ocean ! Tel: " + PHONE})
+    if any(x in m for x in ["event", "soiree", "tonight", "programme", "dj", "music", "karaoke", "jam", "gnawia", "brava", "wunderbar"]):
+        return jsonify({"reply": "🎶 DJ sets & live vibes daily!<br><br>Tue: Karaoke 🎤<br>Wed: La Brava 💃<br>Sun: Jam Session 🎸<br><br>Check " + LINK + " for details."})
 
+    if any(x in m for x in ["horaire", "heure", "open", "close", "ouvert", "ferme", "hours", "when", "quand", "time", "reopen"]):
+        return jsonify({"reply": "🕙 Open every day from 09:30 to 01:00.<br><br>From morning coffee to late night drinks 🌊"})
+
+    # --- AI FALLBACK ---
     if client:
         try:
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -207,12 +216,14 @@ def ask():
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                max_tokens=150
+                max_tokens=150,
+                temperature=0.75
             )
             return jsonify({"reply": response.choices[0].message.content})
         except Exception:
             pass
-    return jsonify({"reply": "Mrehba! Contactez-nous au " + PHONE})
+    
+    return jsonify({"reply": "Mrehba 😊<br><br>Pour toute question ou réservation, contactez-nous : " + PHONE + " ou DM " + INSTA})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
