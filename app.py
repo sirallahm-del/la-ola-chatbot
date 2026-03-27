@@ -9,10 +9,9 @@ app = Flask(__name__)
 API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=API_KEY) if API_KEY else None
 
-SYSTEM_PROMPT = """You are the official AI assistant of La Ola Rooftop in Casablanca.
-Style: Warm, chill, professional but friendly. Use "Mrehba" occasionally.
-Location: 12 Bd de l'Ocean Atlantique, Ain Diab.
-Phone: 05 22 79 78 85.
+SYSTEM_PROMPT = """You are the official guest relations lead at La Ola Rooftop Casablanca. 
+Your goal is NOT just to give info, but to get the reservation.
+Style: High-end vibe, very human, proactive. Use "Mrehba" and "👌".
 """
 
 HTML_PAGE = """<!DOCTYPE html>
@@ -37,6 +36,9 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .bubble { padding: 12px 16px; border-radius: 18px; font-size: 13.5px; line-height: 1.65; }
 .msg.bot .bubble { background: rgba(255,255,255,0.055); border: 1px solid rgba(201,169,110,0.16); color: #e8dcc8; border-radius: 4px 18px 18px 18px; }
 .msg.user .bubble { background: linear-gradient(135deg, #c9a96e, #b8924a); color: #111; border-radius: 18px 18px 4px 18px; }
+.quick-wrap { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.q-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(201,169,110,0.3); background: rgba(201,169,110,0.1); color: #c9a96e; font-size: 12px; cursor: pointer; transition: 0.3s; }
+.q-btn:hover { background: rgba(201,169,110,0.2); }
 .input-area { padding: 10px 14px 20px; background: rgba(9,28,41,0.85); border-top: 1px solid rgba(201,169,110,0.1); }
 .input-row { display: flex; align-items: center; gap: 8px; background: rgba(232,220,200,0.05); border: 1px solid rgba(201,169,110,0.2); border-radius: 28px; padding: 5px 5px 5px 16px; }
 input { flex: 1; background: none; border: none; outline: none; color: #e8dcc8; font-size: 14px; }
@@ -50,12 +52,17 @@ input { flex: 1; background: none; border: none; outline: none; color: #e8dcc8; 
   </div>
   <div class="messages" id="chat">
     <div class="msg bot">
-      <div class="bubble">Mrehba! 🌊<br>Bienvenue à La Ola Rooftop. How can I help you today?</div>
+      <div class="bubble">Mrehba! 🌊<br>I'm here to handle your night at La Ola. What's the plan?</div>
     </div>
+  </div>
+  <div class="quick-wrap" id="quickWrap">
+    <button class="q-btn" onclick="qs('Book a table')">📅 Book a table</button>
+    <button class="q-btn" onclick="qs('Menu & Drinks')">🍹 Menu & Drinks</button>
+    <button class="q-btn" onclick="qs('Location')">📍 Location</button>
   </div>
   <div class="input-area">
     <div class="input-row">
-      <input id="inp" placeholder="Ask anything..." onkeypress="if(event.key==='Enter')send()">
+      <input id="inp" placeholder="Message La Ola..." onkeypress="if(event.key==='Enter')send()">
       <button class="send-btn" onclick="send()">➔</button>
     </div>
   </div>
@@ -87,16 +94,13 @@ async function send() {
     addMsg(data.reply, "bot");
     history.push({ role: "assistant", content: data.reply });
   } catch(e) {
-    addMsg("Mrehba 😅 Bug technique. Appelle-nous : 05 22 79 78 85", "bot");
+    addMsg("Mrehba 😅 Technical glitch. Call us to book: 05 22 79 78 85", "bot");
   }
 }
+function qs(val) { document.getElementById("inp").value = val; send(); }
 </script>
 </body>
 </html>"""
-
-@app.route('/')
-def home():
-    return render_template_string(HTML_PAGE)
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -105,53 +109,31 @@ def ask():
     hist = data.get("history", [])
     m = msg.lower()
 
-    PHONE = "05 22 79 78 85"
-    INSTA = "@laolarooftop"
+    # --- SALES FLOW PRIORITIES ---
+    if any(x in m for x in ["book", "table", "reserve"]):
+        return jsonify({"reply": "I can help you book right now 👌<br>For how many people and what time? Want me to lock that in for you?"})
 
-    # --- 1. EXISTING QUICK CONDITIONS ---
-    if any(x in m for x in ["menu", "food", "eat", "manger"]):
-        return jsonify({"reply": "🔥 Our favourites:<br><br>🍤 Gambas — 90 DH<br>🍕 Seafood Pizza — 100 DH<br>🍹 Aperol Spritz — 90 DH<br><br>Perfect for sharing with drinks 😉<br><br>You coming for food or drinks?"})
+    if any(x in m for x in ["menu", "drink", "food", "eat"]):
+        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH), Aperol Spritz (90DH).<br><br>Should I book a table for dinner or just drinks?"})
 
-    if any(x in m for x in ["drink", "cocktail", "boire", "spritz"]):
-        return jsonify({"reply": "🍸 For drinks, it’s perfect around sunset.<br><br>Aperol Spritz, cocktails & ocean view — best combo.<br><br>You coming with friends or just chilling?"})
+    if any(x in m for x in ["location", "where", "adresse"]):
+        return jsonify({"reply": "📍 Right on the corniche — 12 Bd de l'Ocean Atlantique. Super easy to find.<br><br>You coming tonight? I can save you a seat."})
 
-    if any(x in m for x in ["location", "where", "adresse", "address"]):
-        return jsonify({"reply": "📍 We're right on the corniche — 12 Bd de l'Ocean Atlantique.<br><br>Super easy to find, ocean front 😊<br><br>You coming tonight?"})
-
-    # --- 2. NEW SALES UPGRADES (Time, View, Busy, Group) ---
-
-    # TIME / WHEN TO COME
-    if any(x in m for x in ["time", "when", "quand", "heure"]):
-        return jsonify({"reply": "⏰ Best time really depends on the vibe.<br><br>Around sunset (7-8pm) is perfect for drinks.<br>After 9pm it gets more lively with music 🎶<br><br>You looking for chill or more party?"})
-
-    # VIEW / TERRACE
-    if any(x in m for x in ["view", "terrace", "vue", "outside", "ocean"]):
-        return jsonify({"reply": "Yesss 🌊 the rooftop view is unmatched.<br><br>Ocean view, sunset, music... perfect vibe honestly.<br><br>You planning for drinks or dinner?"})
-
-    # IS IT BUSY / CROWD
-    if any(x in m for x in ["busy", "crowd", "monde", "rempli"]):
-        return jsonify({"reply": "Yeah it gets quite busy at night 🔥<br><br>But that's when the vibe is best 😉<br>If you want a good spot, I'd recommend booking.<br><br>You coming tonight?"})
-
-    # GROUP / 4+ PEOPLE
-    if any(x in m for x in ["4", "four", "quatre", "group", "plusieurs", "amis", "friends"]):
-        return jsonify({"reply": "Nice 👀 for 4+ people I'd recommend booking.<br><br>It gets pretty busy, especially at night 🔥<br>You can DM or call — they'll sort you out.<br><br>What time are you thinking?"})
-
-    # --- 3. AI PART (MUST BE LAST) ---
+    # --- AI BACKUP ---
     if client:
         try:
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-            messages += hist[-6:] if hist else [{"role": "user", "content": msg}]
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=messages,
-                max_tokens=150
-            )
-            return jsonify({"reply": response.choices[0].message.content})
-        except Exception:
-            pass
+            messages += hist[-6:]
+            response = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages, max_tokens=150)
+            ai_reply = response.choices[0].message.content
+            if "?" not in ai_reply: ai_reply += "<br><br>Want me to reserve a table for you?"
+            return jsonify({"reply": ai_reply})
+        except: pass
     
-    return jsonify({"reply": "Mrehba! Pour toute info : " + PHONE + " ou DM sur Insta " + INSTA})
+    return jsonify({"reply": "Mrehba! Call us at 05 22 79 78 85 to secure your spot. See you there? 😉"})
+
+@app.route('/')
+def home(): return render_template_string(HTML_PAGE)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
