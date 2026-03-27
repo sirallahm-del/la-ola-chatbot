@@ -17,18 +17,17 @@ Your goal is to guide users to confirm their reservation via phone or WhatsApp.
 Rules:
 - Never pretend a booking is confirmed.
 - Always guide toward calling (05 22 79 78 85) or WhatsApp (+212 767-393109).
+- For the full menu, tell them to check our Instagram Highlights (@laolarooftop).
 - Keep replies short, natural, premium.
 - Always end with a question or action.
 
-Style:
-- Chill luxury vibe.
-- Use "Mrehba" naturally.
-- Use emojis subtly (🔥 👌 🌊).
+Style: Chill luxury vibe. Use "Mrehba" naturally. Use emojis subtly (🔥 👌 🌊).
 
 Business info:
 - Location: 12 Bd de l'Ocean Atlantique, Ain Diab.
 - Phone: 05 22 79 78 85
 - WhatsApp: +212 767-393109
+- Instagram: @laolarooftop
 """
 
 HTML_PAGE = """<!DOCTYPE html>
@@ -125,15 +124,14 @@ def ask():
     msg = data.get("message", "").strip()
     hist = data.get("history", [])
     m = msg.lower()
-    PHONE = "05 22 79 78 85"
-    WA = "+212 767-393109"
+    PHONE, WA = "05 22 79 78 85", "+212 767-393109"
 
     # --- CONDITIONS DE VENTE DIRECTE ---
     if any(x in m for x in ["book", "table", "reserve"]):
-        return jsonify({"reply": f"Mrehba! 👌 To lock in your table, just give us a call at {PHONE} or message our WhatsApp: {WA}. How many people should we expect?"})
+        return jsonify({"reply": f"Mrehba! 👌 To lock in your spot, call {PHONE} or WhatsApp {WA}. How many people?"})
 
     if any(x in m for x in ["menu", "food", "drink"]):
-        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH), Aperol Spritz (90DH).<br><br>Ready to book? I can guide you to our WhatsApp to confirm."})
+        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH).<br><br>👉 Check our Instagram Highlights **@laolarooftop** for the full food & drinks menu!<br><br>Ready to book?"})
 
     # --- AI BACKUP ---
     if client:
@@ -144,7 +142,7 @@ def ask():
             return jsonify({"reply": response.choices[0].message.content})
         except: pass
     
-    return jsonify({"reply": f"Mrehba! To confirm, please call {PHONE} or WhatsApp {WA}. See you there? 🔥"})
+    return jsonify({"reply": f"Mrehba! To confirm, please call {PHONE} or WhatsApp {WA}. Check our Insta stories for the full menu! 🔥"})
 
 @app.route('/')
 def home(): return render_template_string(HTML_PAGE)
