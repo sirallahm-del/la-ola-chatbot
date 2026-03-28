@@ -137,15 +137,21 @@ def ask():
     if client:
         try:
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-            messages += hist[-6:]
+            if hist:
+                messages += hist[-6:]
+            else:
+                messages.append({"role": "user", "content": msg})
+                
             response = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages, max_tokens=150)
             return jsonify({"reply": response.choices[0].message.content})
-        except: pass
+        except: 
+            pass
     
     return jsonify({"reply": f"Mrehba! To confirm, please call {PHONE} or WhatsApp {WA}. Check our Insta stories for the full menu! 🔥"})
 
 @app.route('/')
-def home(): return render_template_string(HTML_PAGE)
+def home(): 
+    return render_template_string(HTML_PAGE)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
