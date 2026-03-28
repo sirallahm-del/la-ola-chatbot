@@ -52,6 +52,8 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .bubble { padding: 12px 16px; border-radius: 18px; font-size: 13.5px; line-height: 1.65; }
 .msg.bot .bubble { background: rgba(255,255,255,0.055); border: 1px solid rgba(201,169,110,0.16); color: #e8dcc8; border-radius: 4px 18px 18px 18px; }
 .msg.user .bubble { background: linear-gradient(135deg, #c9a96e, #b8924a); color: #111; border-radius: 18px 18px 4px 18px; }
+/* Style pour les liens cliquables dans les bulles */
+.bubble a { color: #c9a96e; font-weight: 600; text-decoration: underline; }
 .quick-wrap { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .q-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(201,169,110,0.3); background: rgba(201,169,110,0.1); color: #c9a96e; font-size: 12px; cursor: pointer; transition: 0.3s; }
 .q-btn:hover { background: rgba(201,169,110,0.2); }
@@ -86,10 +88,11 @@ input { flex: 1; background: none; border: none; outline: none; color: #e8dcc8; 
 <script>
 const chat = document.getElementById("chat");
 const history = [];
+// FIX: Rendre les liens et sauts de ligne cliquables dans l'UI
 function addMsg(text, who) {
   const d = document.createElement("div");
   d.className = "msg " + who;
-  d.innerHTML = '<div class="bubble">' + text + '</div>';
+  d.innerHTML = '<div class="bubble">' + text.replace(/\\n/g, "<br>") + '</div>';
   chat.appendChild(d);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -110,7 +113,7 @@ async function send() {
     addMsg(data.reply, "bot");
     history.push({ role: "assistant", content: data.reply });
   } catch(e) {
-    addMsg("Mrehba 👌 Call us at 05 22 79 78 85 or WhatsApp +212 767-393109 to confirm.", "bot");
+    addMsg("Mrehba 👌 Call us at 05 22 79 78 85 or <a href='https://wa.me/212767393109' target='_blank'>WhatsApp</a> to confirm.", "bot");
   }
 }
 function qs(val) { document.getElementById("inp").value = val; send(); }
@@ -124,34 +127,45 @@ def ask():
     msg = data.get("message", "").strip()
     hist = data.get("history", [])
     m = msg.lower()
-    PHONE, WA = "05 22 79 78 85", "+212 767-393109"
+    
+    PHONE = "05 22 79 78 85"
+    WA_LINK = "https://wa.me/212767393109"
+    # URL directe pour Ain Diab
+    MAPS_LINK = "https://www.google.com/maps/dir/?api=1&destination=33.5950,-7.6975"
 
-    # --- CONDITIONS DE VENTE DIRECTE ---
-    if any(x in m for x in ["book", "table", "reserve"]):
-        return jsonify({"reply": f"Mrehba! 👌 To lock in your spot, call {PHONE} or WhatsApp {WA}. How many people?"})
+    # --- CONDITIONS DE VENTE DIRECTE AVEC LIENS CLIQUABLES ---
+    
+    # FIX: WHATSAPP DIRECT
+    if any(x in m for x in ["book", "table", "reserve", "booking"]):
+        return jsonify({
+            "reply": f"Perfect 👌<br><br><a href='{WA_LINK}' target='_blank'>👉 Book via WhatsApp</a><br><br>Or call: {PHONE}. How many people?"
+        })
 
+    # FIX: GOOGLE MAPS DIRECT
+    if any(x in m for x in ["location", "where", "adresse", "trouver"]):
+        return jsonify({
+            "reply": f"Mrehba! 🌊 We are located at 12 Bd de l'Ocean Atlantique, Ain Diab.<br><br><a href='{MAPS_LINK}' target='_blank'>📍 Open in Google Maps</a><br><br>See you tonight?"
+        })
+
+    # FIX: MENU DIRECT
     if any(x in m for x in ["menu", "food", "drink"]):
-        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH).<br><br>👉 Check our Instagram Highlights **@laolarooftop** for the full food & drinks menu!<br><br>Ready to book?"})
+        return jsonify({
+            "reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH).<br><br><a href='https://www.instagram.com/laolarooftop/' target='_blank'>📸 View Full Menu on Instagram</a><br><br>Ready to book?"
+        })
 
     # --- AI BACKUP ---
     if client:
         try:
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-            if hist:
-                messages += hist[-6:]
-            else:
-                messages.append({"role": "user", "content": msg})
-                
+            messages += hist[-6:]
             response = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages, max_tokens=150)
             return jsonify({"reply": response.choices[0].message.content})
-        except: 
-            pass
+        except: pass
     
-    return jsonify({"reply": f"Mrehba! To confirm, please call {PHONE} or WhatsApp {WA}. Check our Insta stories for the full menu! 🔥"})
+    return jsonify({"reply": f"Mrehba! To confirm, please call {PHONE} or <a href='{WA_LINK}' target='_blank'>WhatsApp us</a>. Check our Insta stories for the menu! 🔥"})
 
 @app.route('/')
-def home(): 
-    return render_template_string(HTML_PAGE)
+def home(): return render_template_string(HTML_PAGE)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
