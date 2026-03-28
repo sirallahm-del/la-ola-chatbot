@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from flask import Flask, render_template_string, request, jsonify
 from groq import Groq
 from dotenv import load_dotenv
@@ -11,27 +12,18 @@ client = Groq(api_key=API_KEY) if API_KEY else None
 
 # --- SYSTEM PROMPT ULTIME ---
 SYSTEM_PROMPT = """You are the top guest relations manager at La Ola Rooftop Casablanca.
-
 Your goal is to guide users to confirm their reservation via phone or WhatsApp.
-
 Rules:
 - Never pretend a booking is confirmed.
 - Always guide toward calling (05 22 79 78 85) or WhatsApp (+212 767-393109).
 - For the full menu, tell them to check our Instagram Highlights (@laolarooftop).
 - Keep replies short, natural, premium.
 - Always end with a question or action.
-
 Style: Chill luxury vibe. Use "Mrehba" naturally. Use emojis subtly (🔥 👌 🌊).
-
-Business info:
-- Location: 12 Bd de l'Ocean Atlantique, Ain Diab.
-- Phone: 05 22 79 78 85
-- WhatsApp: +212 767-393109
-- Instagram: @laolarooftop
 """
 
 HTML_PAGE = """<!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,8 +44,7 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .bubble { padding: 12px 16px; border-radius: 18px; font-size: 13.5px; line-height: 1.65; }
 .msg.bot .bubble { background: rgba(255,255,255,0.055); border: 1px solid rgba(201,169,110,0.16); color: #e8dcc8; border-radius: 4px 18px 18px 18px; }
 .msg.user .bubble { background: linear-gradient(135deg, #c9a96e, #b8924a); color: #111; border-radius: 18px 18px 4px 18px; }
-/* Style pour les liens cliquables dans les bulles */
-.bubble a { color: #c9a96e; font-weight: 600; text-decoration: underline; }
+.bubble a { color: #c9a96e; font-weight: 700; text-decoration: underline; }
 .quick-wrap { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .q-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(201,169,110,0.3); background: rgba(201,169,110,0.1); color: #c9a96e; font-size: 12px; cursor: pointer; transition: 0.3s; }
 .q-btn:hover { background: rgba(201,169,110,0.2); }
@@ -88,11 +79,11 @@ input { flex: 1; background: none; border: none; outline: none; color: #e8dcc8; 
 <script>
 const chat = document.getElementById("chat");
 const history = [];
-// FIX: Rendre les liens et sauts de ligne cliquables dans l'UI
 function addMsg(text, who) {
   const d = document.createElement("div");
   d.className = "msg " + who;
-  d.innerHTML = '<div class="bubble">' + text.replace(/\\n/g, "<br>") + '</div>';
+  // Correction du replace pour les sauts de ligne
+  d.innerHTML = '<div class="bubble">' + text.replace(/\\n/g, "<br>").replace(/\\n/g, "<br>") + '</div>';
   chat.appendChild(d);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -113,7 +104,7 @@ async function send() {
     addMsg(data.reply, "bot");
     history.push({ role: "assistant", content: data.reply });
   } catch(e) {
-    addMsg("Mrehba 👌 Call us at 05 22 79 78 85 or <a href='https://wa.me/212767393109' target='_blank'>WhatsApp</a> to confirm.", "bot");
+    addMsg("Mrehba 👌 Appelez-nous au 05 22 79 78 85 ou via <a href='https://wa.me/212767393109' target='_blank'>WhatsApp</a>.", "bot");
   }
 }
 function qs(val) { document.getElementById("inp").value = val; send(); }
@@ -130,28 +121,17 @@ def ask():
     
     PHONE = "05 22 79 78 85"
     WA_LINK = "https://wa.me/212767393109"
-    # URL directe pour Ain Diab
-    MAPS_LINK = "https://www.google.com/maps/dir/?api=1&destination=33.5950,-7.6975"
+    MAPS_LINK = "https://maps.app.goo.gl/YourActualLink" # Remplace par ton lien réel Ain Diab
 
-    # --- CONDITIONS DE VENTE DIRECTE AVEC LIENS CLIQUABLES ---
-    
-    # FIX: WHATSAPP DIRECT
+    # --- RÉPONSES PRIORITAIRES ---
     if any(x in m for x in ["book", "table", "reserve", "booking"]):
-        return jsonify({
-            "reply": f"Perfect 👌<br><br><a href='{WA_LINK}' target='_blank'>👉 Book via WhatsApp</a><br><br>Or call: {PHONE}. How many people?"
-        })
+        return jsonify({"reply": f"Perfect 👌<br><br><a href='{WA_LINK}' target='_blank'>👉 Book via WhatsApp</a><br><br>Or call: {PHONE}. How many people?"})
 
-    # FIX: GOOGLE MAPS DIRECT
     if any(x in m for x in ["location", "where", "adresse", "trouver"]):
-        return jsonify({
-            "reply": f"Mrehba! 🌊 We are located at 12 Bd de l'Ocean Atlantique, Ain Diab.<br><br><a href='{MAPS_LINK}' target='_blank'>📍 Open in Google Maps</a><br><br>See you tonight?"
-        })
+        return jsonify({"reply": f"Mrehba! 🌊 We are in Ain Diab.<br><br><a href='{MAPS_LINK}' target='_blank'>📍 Open in Google Maps</a><br><br>See you tonight?"})
 
-    # FIX: MENU DIRECT
     if any(x in m for x in ["menu", "food", "drink"]):
-        return jsonify({
-            "reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH).<br><br><a href='https://www.instagram.com/laolarooftop/' target='_blank'>📸 View Full Menu on Instagram</a><br><br>Ready to book?"
-        })
+        return jsonify({"reply": "🔥 Favorites: Gambas (90DH), Seafood Pizza (100DH).<br><br><a href='https://www.instagram.com/laolarooftop/' target='_blank'>📸 View Full Menu on Instagram</a><br><br>Ready to book?"})
 
     # --- AI BACKUP ---
     if client:
@@ -162,7 +142,7 @@ def ask():
             return jsonify({"reply": response.choices[0].message.content})
         except: pass
     
-    return jsonify({"reply": f"Mrehba! To confirm, please call {PHONE} or <a href='{WA_LINK}' target='_blank'>WhatsApp us</a>. Check our Insta stories for the menu! 🔥"})
+    return jsonify({"reply": f"Mrehba! Call {PHONE} or <a href='{WA_LINK}' target='_blank'>WhatsApp us</a> to confirm. 🔥"})
 
 @app.route('/')
 def home(): return render_template_string(HTML_PAGE)
